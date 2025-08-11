@@ -2,9 +2,7 @@
 
 ## Overview
 
-This project is a fully containerized **IoT data pipeline and analytics platform** designed to simulate and process environmental sensor data (CO₂, CO, and temperature) from **Operating Rooms (ORs)** across multiple hospitals. The system includes real-time data ingestion, a dimensional star schema, transformation using dbt, orchestration with Airflow, and dashboards using Superset and/or Metabase.
-
-The stack is ideal for learning and demonstrating **data engineering, analytics, and monitoring** workflows, especially in healthcare or industrial IoT contexts.
+This project is a fully containerized **IoT data pipeline and analytics platform** designed to simulate and process environmental sensor data (CO₂, CO, and temperature) from **Operating Rooms (ORs)** across multiple hospitals. The system includes real-time data ingestion, a dimensional star schema, transformation using dbt, orchestration with Airflow, and dashboards using Superset.
 
 ---
 
@@ -16,7 +14,7 @@ The stack is ideal for learning and demonstrating **data engineering, analytics,
 - ⏳ **Schedules incremental transformations** with Airflow
 - ⚠️ **Detects anomalies** (e.g. high CO₂, extreme temperatures)
 - 📉 **Aggregates hourly/daily stats** for analysis
-- 🔍 **Explores data via Superset and Metabase dashboards**
+- 🔍 **Explores data via Superset dashboards**
 
 ---
 
@@ -54,7 +52,7 @@ The stack is ideal for learning and demonstrating **data engineering, analytics,
               +----------------------------------------+
                                   |
                                   v
-               Superset / Metabase (Dashboard Layer)
+               Superset (Dashboard Layer)
 ```
 
 ---
@@ -67,7 +65,7 @@ The stack is ideal for learning and demonstrating **data engineering, analytics,
 | Storage           | PostgreSQL         | Raw + modeled IoT sensor data          |
 | Transformation    | dbt                | Fact/dim star schema + analytics       |
 | Orchestration     | Apache Airflow     | Schedules `dbt run` + `dbt test`       |
-| Dashboarding      | Superset / Metabase| Visualizes trends & anomalies          |
+| Dashboarding      | Superset           | Visualizes trends & anomalies          |
 | Environment       | Docker Compose     | Full local stack                       |
 
 ---
@@ -99,9 +97,6 @@ The stack is ideal for learning and demonstrating **data engineering, analytics,
 - http://localhost:8088
 - Username: `admin`, Password: `admin`
 
-### Metabase:
-- http://localhost:3000
-
 ---
 
 ## How to Run
@@ -110,15 +105,3 @@ The stack is ideal for learning and demonstrating **data engineering, analytics,
 docker-compose down --volumes --remove-orphans
 docker-compose up --build
 ```
-
-Trigger the DAG manually or let it run on schedule. Superset and Metabase will detect the DBT models for visual analysis.
-
----
-
-## Next Ideas
-
-- Add email or Slack alerts on anomalies
-- Track OR usage or surgery schedules
-- Extend anomaly detection with ML models
-- Publish dashboards externally via Metabase links
-
