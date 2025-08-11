@@ -1,0 +1,136 @@
+version: 2
+
+sources:
+  - name: public
+    database: "{{ env_var('POSTGRES_DB') }}"
+    schema: public
+    tables:
+      - name: hospitals
+      - name: operating_rooms
+      - name: sensors
+      - name: sensor_readings
+
+models:
+  - name: dim_hospital
+    description: Dimension table for hospitals.
+    columns:
+      - name: hospital_id
+        description: Primary key for the hospital.
+      - name: hospital_name
+        description: Name of the hospital.
+      - name: location
+        description: Geographic location.
+
+  - name: dim_operating_room
+    description: Dimension table for operating rooms.
+    columns:
+      - name: or_id
+        description: Primary key for the OR.
+      - name: hospital_id
+        description: Foreign key to hospital.
+      - name: room_number
+        description: Room number.
+      - name: floor
+        description: Floor of the OR.
+      - name: or_type
+        description: Type of surgery OR is used for.
+
+  - name: dim_sensor
+    description: Dimension table for sensor metadata.
+    columns:
+      - name: sensor_id
+        description: Primary key for the sensor.
+      - name: or_id
+        description: Foreign key to operating room.
+      - name: sensor_type
+        description: Type of sensor.
+      - name: manufacturer
+        description: Sensor manufacturer.
+      - name: install_date
+        description: Date sensor was installed.
+
+  - name: fact_sensor_readings
+    description: Fact table containing sensor measurements.
+    columns:
+      - name: timestamp_id
+        description: Timestamp of the reading.
+      - name: hospital_id
+        description: FK to hospital dimension.
+      - name: or_id
+        description: FK to operating room dimension.
+      - name: sensor_id
+        description: FK to sensor dimension.
+      - name: co2_ppm
+        description: CO₂ concentration in parts per million.
+      - name: co_ppm
+        description: CO concentration in parts per million.
+      - name: temperature_c
+        description: Temperature in Celsius.
+
+  - name: agg_avg_sensor_by_hour
+    description: "Hourly average sensor values by hospital and OR"
+    columns:
+      - name: hour
+        description: "Rounded hour timestamp"
+      - name: hospital_id
+        description: "Foreign key to hospital"
+      - name: or_id
+        description: "Foreign key to operating room"
+      - name: avg_co2
+        description: "Average CO₂ ppm"
+      - name: avg_co
+        description: "Average CO ppm"
+      - name: avg_temp
+        description: "Average temperature in Celsius"
+
+  - name: agg_daily_or_stats
+    description: "Daily min/max CO₂ and temperature values per OR"
+    columns:
+      - name: day
+        description: "Date of aggregation"
+      - name: hospital_id
+        description: "Foreign key to hospital"
+      - name: or_id
+        description: "Foreign key to operating room"
+      - name: max_co2
+        description: "Max CO₂ ppm recorded"
+      - name: min_co2
+        description: "Min CO₂ ppm recorded"
+      - name: max_temp
+        description: "Max temperature recorded"
+      - name: min_temp
+        description: "Min temperature recorded"
+
+  - name: anomaly_flags
+    description: "Flags for anomalous sensor values"
+    columns:
+      - name: timestamp_id
+        description: "Timestamp of the reading"
+      - name: hospital_id
+        description: "Foreign key to hospital"
+      - name: or_id
+        description: "Foreign key to operating room"
+      - name: co2_ppm
+        description: "CO₂ concentration in ppm"
+      - name: co_ppm
+        description: "CO concentration in ppm"
+      - name: temperature_c
+        description: "Temperature in Celsius"
+      - name: anomaly_flag
+        description: "Anomaly label (HIGH_CO2, HIGH_CO, TEMP_OUT_OF_RANGE)"
+
+  - name: agg_anomaly_summary
+    description: "Summary of flagged anomalies by hospital and OR per day"
+    columns:
+      - name: day
+        description: "Date of the anomalies"
+      - name: hospital_id
+        description: "Foreign key to hospital"
+      - name: or_id
+        description: "Foreign key to operating room"
+      - name: anomaly_flag
+        description: "Anomaly label"
+      - name: anomaly_count
+        description: "Number of anomalies flagged"
+
+  

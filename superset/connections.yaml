@@ -1,0 +1,5 @@
+databases:
+  - database_name: IoT PostgreSQL
+    sqlalchemy_uri: postgresql://postgres:postgres@db:5432/iot
+    expose_in_sqllab: true
+    allow_run_async: true

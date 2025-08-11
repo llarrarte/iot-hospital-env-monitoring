@@ -1,0 +1,12 @@
+hospital_iot:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: db
+      user: postgres
+      password: postgres
+      port: 5432
+      dbname: iot
+      schema: public
+      threads: 2

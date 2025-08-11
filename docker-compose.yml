@@ -1,0 +1,110 @@
+version: '3.8'
+
+services:
+  mqtt:
+    image: eclipse-mosquitto:2.0
+    container_name: mqtt_broker
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./mqtt/mosquitto.conf:/mosquitto/config/mosquitto.conf
+
+  simulator:
+    build:
+      context: ./simulator
+    container_name: iot_simulator
+    depends_on:
+      - mqtt
+
+  db:
+    image: postgres:14
+    container_name: postgres_db
+    env_file:
+      - .env
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  consumer:
+    build:
+      context: ./consumer
+    container_name: mqtt_consumer
+    depends_on:
+      - mqtt
+      - db
+    environment:
+      POSTGRES_DB: iot
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+   
+  airflow-webserver:
+    image: apache/airflow:2.9.1-python3.10
+    container_name: airflow_webserver
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://$${POSTGRES_USER}:$${POSTGRES_PASSWORD}@db/airflow_db
+      - AIRFLOW__WEBSERVER__SECRET_KEY=$${AIRFLOW__WEBSERVER__SECRET_KEY}
+    env_file:
+      - .env
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/requirements.txt:/requirements.txt
+      - ./dbt:/dbt
+    entrypoint: >
+      /bin/bash -c "
+      pip install -r /requirements.txt &&
+      airflow db init &&
+      airflow users create --username airflow --password airflow --firstname Air --lastname Flow --role Admin --email airflow@example.com &&
+      which dbt &&
+      airflow webserver
+      "
+    ports:
+      - "8080:8080"
+
+  airflow-scheduler:
+    image: apache/airflow:2.9.1-python3.10
+    container_name: airflow_scheduler
+    restart: always
+    depends_on:
+      - airflow-webserver
+    environment:
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://$${POSTGRES_USER}:$${POSTGRES_PASSWORD}@db/airflow_db
+      - AIRFLOW__WEBSERVER__SECRET_KEY=$${AIRFLOW__WEBSERVER__SECRET_KEY}
+    env_file:
+      - .env
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/requirements.txt:/requirements.txt
+      - ./dbt:/dbt
+    entrypoint: >
+      /bin/bash -c "
+      pip install -r /requirements.txt &&
+      airflow scheduler
+      "
+
+  superset:
+    build:
+      context: ./superset
+    container_name: superset
+    ports:
+      - "8088:8088"
+    environment:
+      - SUPERSET_SECRET_KEY=my_superset_secret_key
+    volumes:
+      - ./superset:/app/superset_home
+    depends_on:
+      - db
+    entrypoint: ["/bin/bash", "/app/superset_home/superset-init.sh"]
